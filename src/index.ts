@@ -1,5 +1,7 @@
 import express from 'express'
 
+// imports
+import errorHandler from './middleware/errorHandler'
 // Routers imports 
 import tenantRouter from './routes/tenantRoute'
 
@@ -9,6 +11,8 @@ const app = express()
 app.use('/tenant', tenantRouter)
 
 
+
+app.use(errorHandler)
 const PORT: number = 3000
 
 
