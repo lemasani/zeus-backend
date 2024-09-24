@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model admin {
+  admin_id   Int        @id @default(autoincrement())
+  name       String     @db.VarChar(100)
+  email      String     @unique(map: "email") @db.VarChar(100)
+  role       admin_role
+  created_at DateTime   @default(now()) @db.Timestamp(0)
+}
+
+model bookinginquiry {
+  inquiry_id   Int                    @id @default(autoincrement())
+  tenant_id    Int?
+  property_id  Int?
+  inquiry_date DateTime               @default(now()) @db.Timestamp(0)
+  status       bookinginquiry_status? @default(Pending)
+  message      String?                @db.Text
+  tenant       tenant?                @relation(fields: [tenant_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "bookinginquiry_ibfk_1")
+  property     property?              @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "bookinginquiry_ibfk_2")
+
+  @@index([property_id], map: "property_id")
+  @@index([tenant_id], map: "tenant_id")
+}
+
+model document {
+  document_id     Int              @id @default(autoincrement())
+  agreement_id    Int?
+  document_url    String           @db.VarChar(255)
+  uploaded_at     DateTime         @default(now()) @db.Timestamp(0)
+  rentalagreement rentalagreement? @relation(fields: [agreement_id], references: [agreement_id], onDelete: Restrict, onUpdate: Restrict, map: "document_ibfk_1")
+
+  @@index([agreement_id], map: "agreement_id")
+}
+
+model favoriteproperties {
+  favorite_id Int       @id @default(autoincrement())
+  tenant_id   Int?
+  property_id Int?
+  created_at  DateTime  @default(now()) @db.Timestamp(0)
+  tenant      tenant?   @relation(fields: [tenant_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "favoriteproperties_ibfk_1")
+  property    property? @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "favoriteproperties_ibfk_2")
+
+  @@index([property_id], map: "property_id")
+  @@index([tenant_id], map: "tenant_id")
+}
+
+model landlord {
+  landlord_id         Int               @id @default(autoincrement())
+  name                String            @db.VarChar(100)
+  email               String            @unique(map: "email") @db.VarChar(100)
+  phone_number        String            @db.VarChar(20)
+  business_name       String?           @db.VarChar(100)
+  profile_picture_url String?           @db.VarChar(255)
+  created_at          DateTime          @default(now()) @db.Timestamp(0)
+  property            property[]
+  rentalagreement     rentalagreement[]
+}
+
+model location {
+  location_id Int        @id @default(autoincrement())
+  address     String     @db.VarChar(255)
+  city        String     @db.VarChar(100)
+  region      String     @db.VarChar(100)
+  country     String     @db.VarChar(100)
+  latitude    Decimal?   @db.Decimal(10, 8)
+  longitude   Decimal?   @db.Decimal(11, 8)
+  postal_code String?    @db.VarChar(20)
+  property    property[]
+}
+
+model maintenancerequest {
+  request_id  Int                        @id @default(autoincrement())
+  tenant_id   Int?
+  property_id Int?
+  description String                     @db.Text
+  status      maintenancerequest_status? @default(Pending)
+  created_at  DateTime                   @default(now()) @db.Timestamp(0)
+  resolved_at DateTime?                  @db.Timestamp(0)
+  tenant      tenant?                    @relation(fields: [tenant_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "maintenancerequest_ibfk_1")
+  property    property?                  @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "maintenancerequest_ibfk_2")
+
+  @@index([property_id], map: "property_id")
+  @@index([tenant_id], map: "tenant_id")
+}
+
+model notification {
+  notification_id   Int                            @id @default(autoincrement())
+  user_id           Int?
+  notification_type notification_notification_type
+  message           String                         @db.Text
+  sent_at           DateTime                       @default(now()) @db.Timestamp(0)
+  read_status       notification_read_status?      @default(Unread)
+  tenant            tenant?                        @relation(fields: [user_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "notification_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+model payment {
+  payment_id      Int                     @id @default(autoincrement())
+  agreement_id    Int?
+  amount          Decimal                 @db.Decimal(10, 2)
+  payment_date    DateTime                @db.Date
+  payment_method  payment_payment_method
+  payment_status  payment_payment_status? @default(Pending)
+  rentalagreement rentalagreement?        @relation(fields: [agreement_id], references: [agreement_id], onDelete: Restrict, onUpdate: Restrict, map: "payment_ibfk_1")
+
+  @@index([agreement_id], map: "agreement_id")
+}
+
+model property {
+  property_id         Int                           @id @default(autoincrement())
+  landlord_id         Int?
+  location_id         Int?
+  property_name       String                        @db.VarChar(100)
+  property_type       property_property_type
+  number_of_bedrooms  Int
+  number_of_bathrooms Int
+  square_footage      Decimal?                      @db.Decimal(10, 2)
+  description         String?                       @db.Text
+  price_per_month     Decimal                       @db.Decimal(10, 2)
+  availability_status property_availability_status? @default(Available)
+  amenities           String?                       @db.Text
+  created_at          DateTime                      @default(now()) @db.Timestamp(0)
+  bookinginquiry      bookinginquiry[]
+  favoriteproperties  favoriteproperties[]
+  maintenancerequest  maintenancerequest[]
+  landlord            landlord?                     @relation(fields: [landlord_id], references: [landlord_id], onDelete: Restrict, onUpdate: Restrict, map: "property_ibfk_1")
+  location            location?                     @relation(fields: [location_id], references: [location_id], onDelete: Restrict, onUpdate: Restrict, map: "property_ibfk_2")
+  propertyimage       propertyimage[]
+  rentalagreement     rentalagreement[]
+  review              review[]
+
+  @@index([landlord_id], map: "landlord_id")
+  @@index([location_id], map: "location_id")
+}
+
+model propertyimage {
+  image_id    Int       @id @default(autoincrement())
+  property_id Int?
+  image_url   String    @db.VarChar(255)
+  uploaded_at DateTime  @default(now()) @db.Timestamp(0)
+  property    property? @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "propertyimage_ibfk_1")
+
+  @@index([property_id], map: "property_id")
+}
+
+model rentalagreement {
+  agreement_id     Int                     @id @default(autoincrement())
+  tenant_id        Int?
+  landlord_id      Int?
+  property_id      Int?
+  start_date       DateTime                @db.Date
+  end_date         DateTime                @db.Date
+  monthly_rent     Decimal                 @db.Decimal(10, 2)
+  security_deposit Decimal?                @db.Decimal(10, 2)
+  status           rentalagreement_status? @default(Active)
+  created_at       DateTime                @default(now()) @db.Timestamp(0)
+  document         document[]
+  payment          payment[]
+  tenant           tenant?                 @relation(fields: [tenant_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "rentalagreement_ibfk_1")
+  landlord         landlord?               @relation(fields: [landlord_id], references: [landlord_id], onDelete: Restrict, onUpdate: Restrict, map: "rentalagreement_ibfk_2")
+  property         property?               @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "rentalagreement_ibfk_3")
+
+  @@index([landlord_id], map: "landlord_id")
+  @@index([property_id], map: "property_id")
+  @@index([tenant_id], map: "tenant_id")
+}
+
+model review {
+  review_id   Int       @id @default(autoincrement())
+  tenant_id   Int?
+  property_id Int?
+  rating      Int?
+  review_text String?   @db.Text
+  created_at  DateTime  @default(now()) @db.Timestamp(0)
+  tenant      tenant?   @relation(fields: [tenant_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "review_ibfk_1")
+  property    property? @relation(fields: [property_id], references: [property_id], onDelete: Restrict, onUpdate: Restrict, map: "review_ibfk_2")
+
+  @@index([property_id], map: "property_id")
+  @@index([tenant_id], map: "tenant_id")
+}
+
+model tenant {
+  tenant_id           Int                  @id @default(autoincrement())
+  name                String               @db.VarChar(100)
+  email               String               @unique(map: "email") @db.VarChar(100)
+  phone_number        String               @db.VarChar(20)
+  date_of_birth       DateTime?            @db.Date
+  gender              tenant_gender?
+  profile_picture_url String?              @db.VarChar(255)
+  created_at          DateTime             @default(now()) @db.Timestamp(0)
+  bookinginquiry      bookinginquiry[]
+  favoriteproperties  favoriteproperties[]
+  maintenancerequest  maintenancerequest[]
+  notification        notification[]
+  rentalagreement     rentalagreement[]
+  review              review[]
+  transaction         transaction[]
+}
+
+model transaction {
+  transaction_id     Int                             @id @default(autoincrement())
+  user_id            Int?
+  transaction_type   transaction_transaction_type
+  amount             Decimal                         @db.Decimal(10, 2)
+  transaction_date   DateTime                        @default(now()) @db.Timestamp(0)
+  transaction_status transaction_transaction_status? @default(Pending)
+  tenant             tenant?                         @relation(fields: [user_id], references: [tenant_id], onDelete: Restrict, onUpdate: Restrict, map: "transaction_ibfk_1")
+
+  @@index([user_id], map: "user_id")
+}
+
+enum notification_notification_type {
+  Alert
+  Reminder
+  Message
+}
+
+enum transaction_transaction_type {
+  Payment
+  Refund
+  Fee
+}
+
+enum admin_role {
+  Super_Admin @map("Super Admin")
+  Moderator
+  Support
+}
+
+enum bookinginquiry_status {
+  Pending
+  Reviewed
+  Resolved
+}
+
+enum maintenancerequest_status {
+  Pending
+  In_Progress @map("In Progress")
+  Resolved
+}
+
+enum payment_payment_method {
+  Bank_Transfer @map("Bank Transfer")
+  Credit_Card   @map("Credit Card")
+  Mobile_Money  @map("Mobile Money")
+  Cash
+}
+
+enum property_property_type {
+  Apartment
+  House
+  Studio
+  Villa
+  Other
+}
+
+enum notification_read_status {
+  Unread
+  Read
+}
+
+enum payment_payment_status {
+  Pending
+  Completed
+  Failed
+}
+
+enum tenant_gender {
+  Male
+  Female
+  Other
+}
+
+enum transaction_transaction_status {
+  Pending
+  Completed
+  Failed
+}
+
+enum rentalagreement_status {
+  Active
+  Completed
+  Terminated
+}
+
+enum property_availability_status {
+  Available
+  Rented
+}
